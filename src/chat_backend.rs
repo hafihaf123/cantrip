@@ -1,5 +1,6 @@
 use crate::{
     chatroom::ChatCommand,
+    events::ChatEvent,
     message::{Message, MessageBody},
 };
 use anyhow::Result;
@@ -7,7 +8,7 @@ use futures_lite::StreamExt;
 use iroh::{Endpoint, EndpointId, protocol::Router};
 use iroh_gossip::api::{Event, GossipReceiver};
 use std::collections::HashMap;
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::Sender;
 
 #[derive(Default)]
 struct ChatState {
@@ -33,7 +34,8 @@ pub struct ChatBackend {
     state: ChatState,
     router: Router,
     receiver: GossipReceiver,
-    outbox: mpsc::Sender<ChatCommand>,
+    outbox: Sender<ChatCommand>,
+    ui_event_tx: Sender<ChatEvent>,
 }
 
 impl ChatBackend {
@@ -42,7 +44,8 @@ impl ChatBackend {
         key: [u8; 32],
         router: Router,
         receiver: GossipReceiver,
-        outbox: mpsc::Sender<ChatCommand>,
+        outbox: Sender<ChatCommand>,
+        ui_event_tx: Sender<ChatEvent>,
     ) -> Self {
         Self {
             _endpoint,
@@ -51,18 +54,32 @@ impl ChatBackend {
             router,
             receiver,
             outbox,
+            ui_event_tx,
         }
     }
 
     pub async fn subscribe_loop(mut self) {
         while let Some(event) = self.receiver.try_next().await.unwrap_or(None) {
             if let Err(e) = self.handle_event(event).await {
-                eprintln!("Error processing event: {:?}", e);
+                if self
+                    .ui_event_tx
+                    .send(ChatEvent::Error(format!(
+                        "Failed to process event: {:?}",
+                        e
+                    )))
+                    .await
+                    .is_err()
+                {
+                    break;
+                };
             }
         }
 
         if let Err(e) = self.router.shutdown().await {
-            eprintln!("Error during shutdown: {e:?}");
+            self.ui_event_tx
+                .send(ChatEvent::Error(format!("Error during shutdown: {:?}", e)))
+                .await
+                .ok();
         }
     }
 
@@ -79,19 +96,29 @@ impl ChatBackend {
             MessageBody::Joined { from, name } => {
                 match self.state.update_user(from, name.clone()) {
                     None => {
-                        println!("> {} joined the room. Say hi!", name);
                         self.outbox.send(ChatCommand::BroadcastJoin).await?;
+                        self.ui_event_tx.send(ChatEvent::PeerJoined(name)).await?;
                     }
                     Some(old_name) => {
                         if old_name != name {
-                            println!("> {} changed their name to {}", old_name, name);
+                            self.ui_event_tx
+                                .send(ChatEvent::PeerNameChange {
+                                    old: old_name,
+                                    new: name,
+                                })
+                                .await?;
                         }
                     }
                 }
             }
             MessageBody::Text { from, text } => {
                 let name = self.state.resolve_name(from);
-                println!("{}: {}", name, text);
+                self.ui_event_tx
+                    .send(ChatEvent::MessageReceived {
+                        author: name.to_string(),
+                        content: text,
+                    })
+                    .await?;
             }
         }
         Ok(())

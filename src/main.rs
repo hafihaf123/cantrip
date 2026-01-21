@@ -1,41 +1,48 @@
 mod chat_backend;
 mod chat_client;
+mod chat_config;
 mod chatroom;
 mod cli;
+mod events;
 mod message;
 mod secrets;
 mod ticket;
+mod ui;
 
-use std::io;
-
-use crate::{chatroom::ChatRoom, cli::Cli};
+use crate::{
+    chat_config::ChatConfig,
+    chatroom::ChatRoom,
+    cli::Cli,
+    ui::{UserInterface, stdio::StdioUI},
+};
 use anyhow::Result;
 use tokio::sync::mpsc;
-
-fn input_loop(line_tx: mpsc::Sender<String>) -> Result<()> {
-    let mut buffer = String::new();
-    let stdin = io::stdin();
-    loop {
-        stdin.read_line(&mut buffer)?;
-        line_tx.blocking_send(buffer.trim_ascii_end().to_string())?;
-        buffer.clear();
-    }
-}
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse()?;
+    let chat_config = ChatConfig::from_cli(cli)?;
 
-    let (client, backend) = ChatRoom::join(cli).await?;
+    let (event_tx, mut event_rx) = mpsc::channel(100);
+
+    let (client, backend) = ChatRoom::connect(chat_config, event_tx.clone()).await?;
 
     let _backend_handle = tokio::spawn(backend.subscribe_loop());
 
-    let (line_tx, mut line_rx) = mpsc::channel(1);
-    let _input_handle = std::thread::spawn(move || input_loop(line_tx));
+    let mut ui = StdioUI::new();
 
-    println!("> type a message and hit enter to broadcast...");
-    while let Some(text) = line_rx.recv().await {
-        client.broadcast_text(text).await?;
+    loop {
+        tokio::select! {
+            Some(event) = event_rx.recv() => {
+                ui.render(event).await?;
+            }
+            input_result = ui.get_input() => {
+                match input_result? {
+                    Some(input) => client.broadcast_text(input).await?,
+                    None => break,
+                }
+            }
+        }
     }
 
     Ok(())
