@@ -2,6 +2,13 @@
 name = "cantrip"
 version = "0.1.0"
 edition = "2024"
+description = "A secure, peer-to-peer CLI chat application powered by Iroh."
+authors = ["Michal Buchman"]
+repository = "https://github.com/hafihaf123/cantrip"
+license = "MIT OR Apache-2.0"
+keywords = ["chat", "p2p", "iroh", "cli", "secure"]
+categories = ["command-line-utilities", "network-programming"]
+readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.100"
