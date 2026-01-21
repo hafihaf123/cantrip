@@ -121,3 +121,23 @@ impl ChatBackend {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_user_name_resolution() {
+        let mut state = ChatState::default();
+        let user_id = EndpointId::from_bytes(&[0u8; 32]).unwrap();
+
+        assert_eq!(state.resolve_name(user_id), "Unknown");
+
+        state.update_user(user_id, "Alice".to_string());
+        assert_eq!(state.resolve_name(user_id), "Alice");
+
+        let old_name = state.update_user(user_id, "Bob".to_string());
+        assert_eq!(old_name, Some("Alice".to_string()));
+        assert_eq!(state.resolve_name(user_id), "Bob");
+    }
+}

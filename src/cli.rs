@@ -13,9 +13,11 @@ struct Args {
     #[arg(short, long)]
     username: Option<String>,
 
+    /// The room name to create or connect to
     #[arg(short, long)]
-    topic: Option<String>,
+    room: Option<String>,
 
+    /// Specifies whether you want to open a new chat room or join an existing one
     #[clap(subcommand)]
     command: Command,
 }
@@ -61,7 +63,7 @@ impl TryFrom<Args> for Cli {
             .unwrap_or_else(|| inquire_argument("Enter username", "Username is too short"))?;
 
         let topic = value
-            .topic
+            .room
             .map(|topic| {
                 if topic.len() > 3 {
                     Ok(topic)

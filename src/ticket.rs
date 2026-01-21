@@ -45,3 +45,27 @@ impl FromStr for Ticket {
         Self::from_bytes(&bytes)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use iroh::EndpointAddr;
+    use rand::rng;
+
+    #[test]
+    fn test_ticket_string_roundtrip() {
+        let topic = TopicId::from_bytes([1u8; 32]);
+        let node_id = iroh::SecretKey::generate(&mut rng()).public();
+        let endpoint = EndpointAddr::from_parts(node_id, None);
+
+        let ticket = Ticket::new(topic, vec![endpoint.clone()]);
+
+        let ticket_str = ticket.to_string();
+
+        let parsed_ticket = Ticket::from_str(&ticket_str).expect("Failed to parse ticket");
+
+        assert_eq!(parsed_ticket.topic, topic);
+        assert_eq!(parsed_ticket.endpoints.len(), 1);
+        assert_eq!(parsed_ticket.endpoints.first().unwrap(), &endpoint);
+    }
+}
