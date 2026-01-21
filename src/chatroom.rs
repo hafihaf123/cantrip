@@ -44,14 +44,14 @@ impl ChatRoom {
         let endpoint_ids = endpoints.iter().map(|p| p.id).collect();
         if endpoints.is_empty() {
             event_tx
-                .send(ChatEvent::SystemStatus(format!(
-                    "> waiting for endpoints to join us..."
-                )))
+                .send(ChatEvent::SystemStatus(
+                    "waiting for endpoints to join us...".to_string(),
+                ))
                 .await?;
         } else {
             event_tx
                 .send(ChatEvent::SystemStatus(format!(
-                    "> trying to connect to {} endpoints...",
+                    "trying to connect to {} endpoints...",
                     endpoints.len()
                 )))
                 .await?;
@@ -61,7 +61,7 @@ impl ChatRoom {
             .await?
             .split();
         event_tx
-            .send(ChatEvent::SystemStatus(format!("> connected!")))
+            .send(ChatEvent::SystemStatus("connected!".to_string()))
             .await?;
 
         let client = ChatClient::new(sender, endpoint.clone(), config.symmetric_key);
@@ -75,20 +75,16 @@ impl ChatRoom {
             while let Some(command) = chat_rx.recv().await {
                 match command {
                     ChatCommand::BroadcastJoin => {
-                        match client_clone.broadcast_join(config.username.clone()).await {
-                            Err(e) => {
-                                if event_tx_clone
-                                    .send(ChatEvent::Error(format!(
-                                        "Failed to broadcast a welcome message: {}",
-                                        e
-                                    )))
-                                    .await
-                                    .is_err()
-                                {
-                                    break;
-                                }
-                            }
-                            _ => {}
+                        if let Err(e) = client_clone.broadcast_join(config.username.clone()).await
+                            && event_tx_clone
+                                .send(ChatEvent::Error(format!(
+                                    "Failed to broadcast a welcome message: {}",
+                                    e
+                                )))
+                                .await
+                                .is_err()
+                        {
+                            break;
                         }
                     }
                 }

@@ -60,8 +60,8 @@ impl ChatBackend {
 
     pub async fn subscribe_loop(mut self) {
         while let Some(event) = self.receiver.try_next().await.unwrap_or(None) {
-            if let Err(e) = self.handle_event(event).await {
-                if self
+            if let Err(e) = self.handle_event(event).await
+                && self
                     .ui_event_tx
                     .send(ChatEvent::Error(format!(
                         "Failed to process event: {:?}",
@@ -69,10 +69,9 @@ impl ChatBackend {
                     )))
                     .await
                     .is_err()
-                {
-                    break;
-                };
-            }
+            {
+                break;
+            };
         }
 
         if let Err(e) = self.router.shutdown().await {

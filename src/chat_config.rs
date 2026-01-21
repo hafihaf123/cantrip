@@ -29,12 +29,10 @@ impl ChatConfig {
         let (topic, bootstrap_nodes) = match &cli.command {
             Command::Open => {
                 let topic = TopicId::from_bytes(rand::random());
-                println!("> opening chat room for topic {topic}");
                 (topic, vec![])
             }
             Command::Join { ticket } => {
                 let (topic, endpoints) = Ticket::from_str(ticket)?.into_tuple();
-                println!("> joining chat room for topic {topic}");
                 (topic, endpoints)
             }
         };

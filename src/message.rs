@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result, anyhow};
 use chacha20poly1305::{
     AeadCore, KeyInit, XChaCha20Poly1305, XNonce,
     aead::{Aead, OsRng},
@@ -19,10 +19,10 @@ pub enum MessageBody {
 }
 
 impl Message {
-    pub fn new(body: MessageBody, key: &[u8; 32]) -> Self {
+    pub fn new(body: MessageBody, key: &[u8; 32]) -> Result<Self> {
         let nonce: [u8; 24] = XChaCha20Poly1305::generate_nonce(&mut OsRng).into();
-        let ciphertext = body.encrypt(&nonce, key);
-        Self { ciphertext, nonce }
+        let ciphertext = body.encrypt(&nonce, key)?;
+        Ok(Self { ciphertext, nonce })
     }
 
     pub fn decrypt(&self, key: &[u8; 32]) -> Result<MessageBody> {
@@ -40,22 +40,22 @@ impl Message {
         serde_json::from_slice(bytes).map_err(Into::into)
     }
 
-    pub fn to_vec(&self) -> Vec<u8> {
-        serde_json::to_vec(self).expect("Unexpected error serializing a message.")
+    pub fn to_vec(&self) -> Result<Vec<u8>> {
+        serde_json::to_vec(self).context("Unexpected error serializing a message.")
     }
 }
 
 impl MessageBody {
-    fn to_vec(&self) -> Vec<u8> {
-        serde_json::to_vec(self).expect("Unexpected error serializing a message body.")
+    fn to_vec(&self) -> Result<Vec<u8>> {
+        serde_json::to_vec(self).context("Unexpected error serializing a message body.")
     }
 
-    fn encrypt(&self, nonce: &[u8; 24], key: &[u8; 32]) -> Vec<u8> {
+    fn encrypt(&self, nonce: &[u8; 24], key: &[u8; 32]) -> Result<Vec<u8>> {
         let cipher = XChaCha20Poly1305::new(key.into());
 
         cipher
-            .encrypt(nonce.into(), &self.to_vec()[..])
-            .expect("Unexpected failure while encrypting a message.")
+            .encrypt(nonce.into(), &self.to_vec()?[..])
+            .map_err(|_| anyhow!("Unexpected failure while encrypting a message."))
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self> {
