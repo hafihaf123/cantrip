@@ -7,10 +7,8 @@ use iroh::{
 use iroh_gossip::Gossip;
 use tokio::sync::mpsc::{self, Sender};
 
-use crate::{
-    chat_backend::ChatBackend, chat_client::ChatClient, chat_config::ChatConfig, events::ChatEvent,
-    ticket::Ticket,
-};
+use crate::chat::{ChatBackend, ChatClient, ChatConfig};
+use crate::{events::ChatEvent, ticket::Ticket};
 
 pub enum ChatCommand {
     BroadcastJoin,

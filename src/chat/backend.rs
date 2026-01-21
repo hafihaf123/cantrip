@@ -1,8 +1,6 @@
-use crate::{
-    chatroom::ChatCommand,
-    events::ChatEvent,
-    message::{Message, MessageBody},
-};
+use crate::chat::room::ChatCommand;
+use crate::events::ChatEvent;
+use crate::message::{Message, MessageBody};
 use anyhow::Result;
 use futures_lite::StreamExt;
 use iroh::{Endpoint, EndpointId, protocol::Router};

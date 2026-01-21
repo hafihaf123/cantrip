@@ -1,7 +1,4 @@
-mod chat_backend;
-mod chat_client;
-mod chat_config;
-mod chatroom;
+mod chat;
 mod cli;
 mod events;
 mod message;
@@ -9,12 +6,9 @@ mod secrets;
 mod ticket;
 mod ui;
 
-use crate::{
-    chat_config::ChatConfig,
-    chatroom::ChatRoom,
-    cli::Cli,
-    ui::{UserInterface, stdio::StdioUI},
-};
+use crate::chat::{ChatConfig, ChatRoom};
+use crate::cli::Cli;
+use crate::ui::{UserInterface, stdio::StdioUI};
 use anyhow::Result;
 use tokio::sync::mpsc;
 
