@@ -35,4 +35,3 @@ pub fn hash_password(password: &str, topic_hash: &[u8]) -> [u8; 32] {
 
     output_key
 }
-
