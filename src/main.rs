@@ -73,6 +73,19 @@ async fn main() -> Result<()> {
                     let _ = shutdown_tx.send(());
                 }
             }
+
+            // gracfully handling CTRL+C shutdown signal
+            _ = tokio::signal::ctrl_c() => {
+                ui.render(ChatEvent::SystemStatus(
+                    "Detected shutdown sequence. You can also use the '/quit' command to leave".to_string()
+                )).await?;
+                if let Some(client) = &client_option {
+                    client.broadcast_left().await?;
+                    // give some time to the bradcast to succeed
+                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                }
+                let _ = shutdown_tx.send(());
+            }
         }
     }
 
