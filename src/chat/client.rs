@@ -19,31 +19,34 @@ impl ChatClient {
         }
     }
 
-    pub async fn broadcast_text(&self, text: String) -> Result<()> {
-        let message = Message::new(
-            MessageBody::Text {
-                from: self.endpoint.id(),
-                text,
-            },
-            &self.key,
-        )?;
+    async fn broadcast(&self, body: MessageBody) -> Result<()> {
+        let message = Message::new(body, &self.key)?;
         self.sender
             .broadcast(message.to_vec()?.into())
             .await
             .map_err(Into::into)
     }
 
+    pub async fn broadcast_text(&self, text: String) -> Result<()> {
+        let body = MessageBody::Text {
+            from: self.endpoint.id(),
+            text,
+        };
+        self.broadcast(body).await
+    }
+
     pub async fn broadcast_join(&self, name: String) -> Result<()> {
-        let message = Message::new(
-            MessageBody::Joined {
-                from: self.endpoint.id(),
-                name,
-            },
-            &self.key,
-        )?;
-        self.sender
-            .broadcast(message.to_vec()?.into())
-            .await
-            .map_err(Into::into)
+        let body = MessageBody::Joined {
+            from: self.endpoint.id(),
+            name,
+        };
+        self.broadcast(body).await
+    }
+
+    pub async fn broadcast_left(&self) -> Result<()> {
+        let body = MessageBody::Left {
+            from: self.endpoint.id(),
+        };
+        self.broadcast(body).await
     }
 }

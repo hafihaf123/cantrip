@@ -15,6 +15,7 @@ pub struct Message {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum MessageBody {
     Joined { from: EndpointId, name: String },
+    Left { from: EndpointId },
     Text { from: EndpointId, text: String },
 }
 

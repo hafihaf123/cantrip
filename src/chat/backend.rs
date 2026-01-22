@@ -5,6 +5,7 @@ use futures_lite::StreamExt;
 use iroh::{Endpoint, EndpointId, protocol::Router};
 use iroh_gossip::api::{Event, GossipReceiver};
 use std::collections::HashMap;
+use tokio::sync::broadcast;
 use tokio::sync::mpsc::Sender;
 
 #[derive(Default)]
@@ -22,6 +23,10 @@ impl ChatState {
             .get(&author)
             .map(|s| s.as_str())
             .unwrap_or("Unknown")
+    }
+
+    fn remove_user(&mut self, author: &EndpointId) -> Option<String> {
+        self.users.remove(author)
     }
 }
 
@@ -55,21 +60,41 @@ impl ChatBackend {
         }
     }
 
-    pub async fn subscribe_loop(mut self) {
-        while let Some(event) = self.receiver.try_next().await.unwrap_or(None) {
-            if let Err(e) = self.handle_event(event).await
-                && self
-                    .event_tx
-                    .send(SystemEvent::Ui(ChatEvent::Error(format!(
-                        "Failed to process event: {:?}",
-                        e
-                    ))))
-                    .await
-                    .is_err()
-            {
-                break;
-            };
+    pub async fn subscribe_loop(mut self, mut shutdown_rx: broadcast::Receiver<()>) {
+        loop {
+            tokio::select! {
+                _ = shutdown_rx.recv() => {
+                    break;
+                }
+
+                event_option = self.receiver.try_next() => {
+                    match event_option {
+                        Ok(Some(event)) => {
+                            if let Err(e) = self.handle_event(event).await
+                                && self
+                                    .event_tx
+                                    .send(SystemEvent::Ui(ChatEvent::Error(format!(
+                                        "Failed to process event: {:?}",
+                                        e
+                                    ))))
+                                    .await
+                                    .is_err()
+                            {
+                                break;
+                            };
+                        }
+                        _ => break,
+                    }
+                }
+            }
         }
+
+        self.event_tx
+            .send(SystemEvent::Ui(ChatEvent::SystemStatus(
+                "You left the chat".to_string(),
+            )))
+            .await
+            .ok();
 
         if let Err(e) = self.router.shutdown().await {
             self.event_tx
@@ -78,7 +103,8 @@ impl ChatBackend {
                     e
                 ))))
                 .await
-                .ok();
+                .expect("Failed to log shotdown error");
+            // .ok();
         }
     }
 
@@ -124,6 +150,13 @@ impl ChatBackend {
                         content: text,
                     }))
                     .await?;
+            }
+            MessageBody::Left { from } => {
+                if let Some(user) = self.state.remove_user(&from) {
+                    self.event_tx
+                        .send(SystemEvent::Ui(ChatEvent::PeerLeft(user)))
+                        .await?;
+                }
             }
         }
         Ok(())

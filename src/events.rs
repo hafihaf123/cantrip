@@ -8,17 +8,10 @@ pub enum NetworkEvent {
 }
 
 pub enum ChatEvent {
-    MessageReceived {
-        author: String,
-        content: String,
-    },
+    MessageReceived { author: String, content: String },
     PeerJoined(String),
-    #[allow(dead_code)]
     PeerLeft(String),
-    PeerNameChange {
-        old: String,
-        new: String,
-    },
+    PeerNameChange { old: String, new: String },
     SystemStatus(String),
     Error(String),
 }
