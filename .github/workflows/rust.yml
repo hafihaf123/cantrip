@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -48,19 +48,16 @@ jobs:
         run: Rename-Item C:\Users\runneradmin\.rustup\toolchains\stable-x86_64-pc-windows-msvc C:\Users\runneradmin\.rustup\toolchains\stable-x86_64-pc-windows-msvc.old
 
       - name: Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@97db979bf844c838b06022f305ca480d01b4d5fe
+        uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Cache Dependencies
-        uses: Swatinem/rust-cache@e8e63cdbf2788df3801e6f9a81516b2ca8391886
+        uses: Swatinem/rust-cache@v2
 
       - name: Compile
         run: cargo test --no-run --locked
 
       - name: Test
         run: cargo test --verbose
-        env:
-          TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
-          TEST_CREDENTIAL: ${{ secrets.TEST_CREDENTIAL }}
 
   format:
     name: cargo fmt
@@ -71,15 +68,15 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@97db979bf844c838b06022f305ca480d01b4d5fe
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt
 
       - name: Rustfmt Check
-        uses: actions-rust-lang/rustfmt@559aa3035a47390ba96088dffa783b5d26da9326
+        uses: actions-rust-lang/rustfmt@v1
 
   clippy:
     name: Clippy
@@ -95,7 +92,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -104,12 +101,12 @@ jobs:
           sudo apt-get install -y libdbus-1-dev pkg-config
 
       - name: Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@97db979bf844c838b06022f305ca480d01b4d5fe
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: clippy
 
       - name: Cache Dependencies
-        uses: Swatinem/rust-cache@e8e63cdbf2788df3801e6f9a81516b2ca8391886
+        uses: Swatinem/rust-cache@v2
 
       - name: Run Clippy
         run: cargo clippy --all-targets --all-features
