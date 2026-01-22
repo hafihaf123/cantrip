@@ -50,9 +50,6 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - name: Cache Dependencies
-        uses: Swatinem/rust-cache@v2
-
       - name: Compile
         run: cargo test --no-run --locked
 
@@ -104,9 +101,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: clippy
-
-      - name: Cache Dependencies
-        uses: Swatinem/rust-cache@v2
 
       - name: Run Clippy
         run: cargo clippy --all-targets --all-features
