@@ -40,17 +40,17 @@ impl Message {
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        serde_json::from_slice(bytes).map_err(Into::into)
+        postcard::from_bytes(bytes).map_err(Into::into)
     }
 
     pub fn to_vec(&self) -> Result<Vec<u8>> {
-        serde_json::to_vec(self).context("Unexpected error serializing a message.")
+        postcard::to_stdvec(self).context("Unexpected error serializing a message.")
     }
 }
 
 impl MessageBody {
     fn to_vec(&self) -> Result<Vec<u8>> {
-        serde_json::to_vec(self).context("Unexpected error serializing a message body.")
+        postcard::to_stdvec(self).context("Unexpected error serializing a message body.")
     }
 
     /// Encrypts the message body using the specified key and nonce
@@ -63,7 +63,7 @@ impl MessageBody {
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        serde_json::from_slice(bytes).map_err(Into::into)
+        postcard::from_bytes(bytes).map_err(Into::into)
     }
 }
 

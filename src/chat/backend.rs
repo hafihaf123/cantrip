@@ -1,5 +1,4 @@
-use crate::chat::room::ChatCommand;
-use crate::events::ChatEvent;
+use crate::events::{ChatEvent, NetworkEvent, SystemEvent};
 use crate::message::{Message, MessageBody};
 use anyhow::Result;
 use futures_lite::StreamExt;
@@ -32,8 +31,8 @@ pub struct ChatBackend {
     state: ChatState,
     router: Router,
     receiver: GossipReceiver,
-    outbox: Sender<ChatCommand>,
-    ui_event_tx: Sender<ChatEvent>,
+    event_tx: Sender<SystemEvent>,
+    username: String,
 }
 
 impl ChatBackend {
@@ -42,8 +41,8 @@ impl ChatBackend {
         key: [u8; 32],
         router: Router,
         receiver: GossipReceiver,
-        outbox: Sender<ChatCommand>,
-        ui_event_tx: Sender<ChatEvent>,
+        event_tx: Sender<SystemEvent>,
+        username: String,
     ) -> Self {
         Self {
             _endpoint,
@@ -51,8 +50,8 @@ impl ChatBackend {
             state: ChatState::default(),
             router,
             receiver,
-            outbox,
-            ui_event_tx,
+            event_tx,
+            username,
         }
     }
 
@@ -60,11 +59,11 @@ impl ChatBackend {
         while let Some(event) = self.receiver.try_next().await.unwrap_or(None) {
             if let Err(e) = self.handle_event(event).await
                 && self
-                    .ui_event_tx
-                    .send(ChatEvent::Error(format!(
+                    .event_tx
+                    .send(SystemEvent::Ui(ChatEvent::Error(format!(
                         "Failed to process event: {:?}",
                         e
-                    )))
+                    ))))
                     .await
                     .is_err()
             {
@@ -73,8 +72,11 @@ impl ChatBackend {
         }
 
         if let Err(e) = self.router.shutdown().await {
-            self.ui_event_tx
-                .send(ChatEvent::Error(format!("Error during shutdown: {:?}", e)))
+            self.event_tx
+                .send(SystemEvent::Ui(ChatEvent::Error(format!(
+                    "Error during shutdown: {:?}",
+                    e
+                ))))
                 .await
                 .ok();
         }
@@ -93,16 +95,22 @@ impl ChatBackend {
             MessageBody::Joined { from, name } => {
                 match self.state.update_user(from, name.clone()) {
                     None => {
-                        self.outbox.send(ChatCommand::BroadcastJoin).await?;
-                        self.ui_event_tx.send(ChatEvent::PeerJoined(name)).await?;
+                        self.event_tx
+                            .send(SystemEvent::Ui(ChatEvent::PeerJoined(name)))
+                            .await?;
+                        self.event_tx
+                            .send(SystemEvent::Network(NetworkEvent::BroadcastJoin(
+                                self.username.clone(),
+                            )))
+                            .await?;
                     }
                     Some(old_name) => {
                         if old_name != name {
-                            self.ui_event_tx
-                                .send(ChatEvent::PeerNameChange {
+                            self.event_tx
+                                .send(SystemEvent::Ui(ChatEvent::PeerNameChange {
                                     old: old_name,
                                     new: name,
-                                })
+                                }))
                                 .await?;
                         }
                     }
@@ -110,11 +118,11 @@ impl ChatBackend {
             }
             MessageBody::Text { from, text } => {
                 let name = self.state.resolve_name(from);
-                self.ui_event_tx
-                    .send(ChatEvent::MessageReceived {
+                self.event_tx
+                    .send(SystemEvent::Ui(ChatEvent::MessageReceived {
                         author: name.to_string(),
                         content: text,
-                    })
+                    }))
                     .await?;
             }
         }

@@ -319,18 +319,18 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "argon2",
+ "base64",
  "blake3",
  "chacha20poly1305",
  "clap",
- "data-encoding",
  "dialoguer",
  "futures-lite",
  "iroh",
  "iroh-gossip",
  "keyring",
+ "postcard",
  "rand 0.9.2",
  "serde",
- "serde_json",
  "tokio",
 ]
 

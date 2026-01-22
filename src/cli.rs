@@ -3,6 +3,8 @@ use anyhow::anyhow;
 use clap::Parser;
 use dialoguer::Input;
 
+use crate::ticket::TICKET_PREFIX;
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -29,15 +31,15 @@ pub enum Command {
     /// Join a chat room from a ticket.
     Join {
         /// The ticket, as base32 string.
-        ticket: String,
+        ticket: Option<String>,
     },
 }
 
 pub struct Cli {
     pub username: String,
-    pub topic: String,
+    pub room: String,
     pub password: String,
-    pub command: Command,
+    pub ticket: Option<String>,
 }
 
 impl Cli {
@@ -60,9 +62,11 @@ impl TryFrom<Args> for Cli {
                     Err(anyhow!("Username is too short"))
                 }
             })
-            .unwrap_or_else(|| inquire_argument("Enter username", "Username is too short"))?;
+            .unwrap_or_else(|| {
+                inquire_argument("Enter username", "Username is too short", |s| s.len() > 3)
+            })?;
 
-        let topic = value
+        let room = value
             .room
             .map(|topic| {
                 if topic.len() > 3 {
@@ -71,7 +75,29 @@ impl TryFrom<Args> for Cli {
                     Err(anyhow!("Topic name is too short"))
                 }
             })
-            .unwrap_or_else(|| inquire_argument("Enter room name", "Room name is too short"))?;
+            .unwrap_or_else(|| {
+                inquire_argument("Enter room name", "Room name is too short", |s| s.len() > 3)
+            })?;
+
+        let ticket = if let Command::Join { ticket } = value.command {
+            Some(
+                ticket
+                    .map(|topic| {
+                        if let Some(topic) = topic.strip_prefix(TICKET_PREFIX) {
+                            Ok(topic.to_string())
+                        } else {
+                            Err(anyhow!("Invalid ticket"))
+                        }
+                    })
+                    .unwrap_or_else(|| {
+                        inquire_argument("Enter ticket to join", "Invalid ticket", |s| {
+                            s.strip_prefix(TICKET_PREFIX).is_some()
+                        })
+                    })?,
+            )
+        } else {
+            None
+        };
 
         let password = loop {
             match dialoguer::Password::new()
@@ -85,18 +111,22 @@ impl TryFrom<Args> for Cli {
 
         Ok(Cli {
             username,
-            topic,
+            room,
             password,
-            command: value.command,
+            ticket,
         })
     }
 }
 
-fn inquire_argument(input_prompt: &str, err_prompt: &str) -> Result<String> {
+fn inquire_argument(
+    input_prompt: &str,
+    err_prompt: &str,
+    validator: impl Fn(&String) -> bool,
+) -> Result<String> {
     Ok(Input::new()
         .with_prompt(input_prompt)
         .validate_with(|input: &String| {
-            if input.len() > 3 {
+            if validator(input) {
                 Ok(())
             } else {
                 Err(err_prompt)

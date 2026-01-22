@@ -1,3 +1,12 @@
+pub enum SystemEvent {
+    Ui(ChatEvent),
+    Network(NetworkEvent),
+}
+
+pub enum NetworkEvent {
+    BroadcastJoin(String),
+}
+
 pub enum ChatEvent {
     MessageReceived {
         author: String,

@@ -1,8 +1,5 @@
-use crate::{
-    cli::Command,
-    secrets::{get_secret_key, hash_password},
-    ticket::Ticket,
-};
+use crate::secrets::{get_secret_key, hash_password};
+use crate::ticket::Ticket;
 use anyhow::Result;
 use iroh::{EndpointAddr, SecretKey};
 use iroh_gossip::TopicId;
@@ -24,14 +21,14 @@ impl ChatConfig {
 
         let secret_key = get_secret_key(&username)?;
 
-        let topic_hash = blake3::hash(cli.topic.as_bytes());
+        let topic_hash = blake3::hash(cli.room.as_bytes());
 
-        let (topic, bootstrap_nodes) = match &cli.command {
-            Command::Open => {
+        let (topic, bootstrap_nodes) = match &cli.ticket {
+            None => {
                 let topic = TopicId::from_bytes(rand::random());
                 (topic, vec![])
             }
-            Command::Join { ticket } => {
+            Some(ticket) => {
                 let (topic, endpoints) = Ticket::from_str(ticket)?.into_tuple();
                 (topic, endpoints)
             }
