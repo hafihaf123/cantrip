@@ -2,12 +2,12 @@
 name = "cantrip"
 version = "0.1.0"
 edition = "2024"
-description = "A secure, peer-to-peer CLI chat application powered by Iroh."
+description = "A decentralized, terminal-based Virtual Tabletop (VTT) for RPGs, powered by Iroh."
 authors = ["Michal Buchman"]
 repository = "https://github.com/hafihaf123/cantrip"
 license = "MIT OR Apache-2.0"
-keywords = ["chat", "p2p", "iroh", "cli", "secure"]
-categories = ["command-line-utilities", "network-programming"]
+keywords = ["vtt", "rpg", "dnd", "p2p", "cli"]
+categories = ["command-line-utilities", "games"]
 readme = "README.md"
 
 [dependencies]
