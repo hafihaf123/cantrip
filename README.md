@@ -62,8 +62,8 @@ cantrip -u Grog -r "CurseOfStrahd" join --ticket "ticket_string_here"
 ## Development Roadmap
 
 ### Phase 1: The Dice & Command Framework
-- [ ]  Implement structured command parsing (migrating from simple `/nick` commands).
-- [ ]  Add a dice parser (e.g., `1d8+4`) and a `MessageBody::Roll` struct to visually distinguish rolls from chat.
+- [x]  Implement structured command parsing (migrating from simple `/nick` commands).
+- [x]  Add a dice parser (e.g., `1d8+4`) and a `MessageBody::Roll` struct to visually distinguish rolls from chat.
 
 ### Phase 2: The Interface
 - [ ]  Migrate from scrolling text (`println!`) to a full TUI with `Ratatui`.
