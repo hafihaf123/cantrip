@@ -27,6 +27,18 @@ impl UserInterface for StdioUI {
             crate::events::ChatEvent::PeerNameChange { old, new } => {
                 println!("> {} changed their name to {}", old, new);
             }
+            crate::events::ChatEvent::DiceRolled {
+                result,
+                rolls,
+                dice,
+                author,
+            } => println!(
+                "{} rolled {} from {} ({:?})",
+                author.as_deref().unwrap_or("You"),
+                result,
+                dice,
+                rolls
+            ),
         }
         Ok(())
     }

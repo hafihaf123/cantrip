@@ -6,6 +6,8 @@ use chacha20poly1305::{
 use iroh::EndpointId;
 use serde::{Deserialize, Serialize};
 
+use crate::dice::Dice;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Message {
     ciphertext: Vec<u8>,
@@ -14,9 +16,23 @@ pub struct Message {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum MessageBody {
-    Joined { from: EndpointId, name: String },
-    Left { from: EndpointId },
-    Text { from: EndpointId, text: String },
+    Joined {
+        from: EndpointId,
+        name: String,
+    },
+    Left {
+        from: EndpointId,
+    },
+    Text {
+        from: EndpointId,
+        text: String,
+    },
+    DiceRoll {
+        from: EndpointId,
+        result: u32,
+        dice: Dice,
+        rolls: Vec<u32>,
+    },
 }
 
 impl Message {

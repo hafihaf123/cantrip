@@ -1,6 +1,7 @@
 mod chat;
 mod cli;
 mod command;
+mod dice;
 mod events;
 mod message;
 mod secrets;
@@ -10,6 +11,7 @@ mod ui;
 use crate::chat::{ChatClient, ChatConfig, ChatRoom};
 use crate::cli::Cli;
 use crate::command::InputCommand;
+use crate::dice::Dice;
 use crate::events::{ChatEvent, NetworkEvent, SystemEvent};
 use crate::ui::{UserInterface, stdio::StdioUI};
 use anyhow::Result;
@@ -119,6 +121,20 @@ async fn handle_user_input<T: UserInterface>(
                 .await?;
                 client.broadcast_join(name).await?;
             }
+            InputCommand::DiceRoll(dice_str) => match dice_str.parse::<Dice>() {
+                Ok(dice) => {
+                    let (result, rolls) = dice.roll();
+                    ui.render(ChatEvent::DiceRolled {
+                        result,
+                        rolls: rolls.clone(),
+                        dice,
+                        author: None,
+                    })
+                    .await?;
+                    client.broadcast_dice_roll(result, dice, rolls).await?;
+                }
+                Err(e) => ui.render(ChatEvent::Error(e.to_string())).await?,
+            },
         }
     } else {
         ui.render(ChatEvent::Error("Wait for connection...".to_string()))

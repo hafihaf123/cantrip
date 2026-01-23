@@ -158,6 +158,22 @@ impl ChatBackend {
                         .await?;
                 }
             }
+            MessageBody::DiceRoll {
+                from,
+                result,
+                dice,
+                rolls,
+            } => {
+                let name = self.state.resolve_name(from);
+                self.event_tx
+                    .send(SystemEvent::Ui(ChatEvent::DiceRolled {
+                        result,
+                        rolls,
+                        dice,
+                        author: Some(name.to_string()),
+                    }))
+                    .await?;
+            }
         }
         Ok(())
     }
