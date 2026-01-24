@@ -8,12 +8,10 @@ mod secrets;
 mod ticket;
 mod ui;
 
-use crate::chat::{ChatClient, ChatConfig, ChatRoom};
-use crate::cli::Cli;
-use crate::command::InputCommand;
-use crate::dice::Dice;
-use crate::events::{ChatEvent, NetworkEvent, SystemEvent};
-use crate::ui::{UserInterface, stdio::StdioUI};
+use crate::chat::{ChatApp, ChatClient, ChatConfig, ChatRoom};
+use crate::ui::InputEvent;
+use crate::ui::{ChatRenderer, InputSource, UserInterface, stdio::StdioUI};
+use crate::{cli::Cli, dice::Dice, events::ChatEvent};
 use anyhow::Result;
 use tokio::sync::{broadcast, mpsc};
 use tokio::task::JoinHandle;
@@ -22,39 +20,52 @@ use tokio::task::JoinHandle;
 async fn main() -> Result<()> {
     let cli = Cli::parse()?;
     let chat_config = ChatConfig::from_cli(cli)?;
-    let mut ui = StdioUI::new();
 
+    let (renderer, mut input_source) = StdioUI::init();
     // UI user input sending logic
     let (input_tx, mut input_rx) = mpsc::channel(100);
     std::thread::spawn(move || {
-        let mut ui_input = StdioUI::new();
         loop {
-            if let Ok(Some(line)) = ui_input.get_input()
-                && input_tx.blocking_send(line).is_err()
-            {
-                break;
+            match input_source.get_input() {
+                Ok(InputEvent::Text(text)) => {
+                    if input_tx.blocking_send(text).is_err() {
+                        break;
+                    }
+                }
+                Ok(InputEvent::Quit) => break,
+                Err(e) => {
+                    eprintln!("Error fetching input: {}", e);
+                    break;
+                }
             }
         }
     });
 
     let (event_tx, mut event_rx) = mpsc::channel(100);
     let (shutdown_tx, _) = broadcast::channel(1);
+
+    let mut app = ChatApp::new(renderer, shutdown_tx.clone());
     let mut connect_task = Box::pin(ChatRoom::connect(chat_config, event_tx));
-    let mut client_option: Option<ChatClient> = None;
     let mut backend_handle: Option<JoinHandle<()>> = None;
+
+    let mut exit_reason: Option<String> = None;
 
     loop {
         tokio::select! {
             // connecting to the chat room in parallel while dataflows work
-            result = &mut connect_task, if client_option.is_none() => {
+            result = &mut connect_task, if app.client().is_none() => {
                 match result {
                     Ok((client, backend)) => {
-                        client_option = Some(client);
-                        let shutdown_rx = shutdown_tx.subscribe();
+                        app.set_client(client);
+                        let shutdown_rx = app.subscribe_shutdown();
                         backend_handle = Some(tokio::spawn(backend.subscribe_loop(shutdown_rx)));
                     }
                     Err(e) => {
-                        ui.render(ChatEvent::Error(format!("Fatal connection error: {}", e))).await?;
+                        let err_msg = format!("Fatal connection error: {}", e);
+                        if let Err(e) = app.ui().render(ChatEvent::Error(err_msg.clone())).await {
+                            eprintln!("Failed to render error to UI: {}. Original error: {}.", e, err_msg)
+                        };
+                        exit_reason = Some(err_msg);
                         break;
                     }
                 }
@@ -63,103 +74,51 @@ async fn main() -> Result<()> {
             // receiving UI and Network (client) events
             event_option = event_rx.recv() => {
                 match event_option {
-                    Some(event) => handle_system_event(event, &client_option, &mut ui).await?,
-                    None => break,
+                    Some(event) => app.handle_system_event(event).await.unwrap_or_else(|e|
+                        eprintln!("System event handler error: {:#}", e)
+                    ),
+                    None => break, // On graceful shutdown, we wait until this channel closes
                 }
             }
 
             // receiving user input, processing and propagating as system events
             Some(line) = input_rx.recv() => {
-                if !handle_user_input(line, &client_option, &mut ui).await? {
-                    // user requested shutdown
-                    let _ = shutdown_tx.send(());
+                match app.handle_user_input(line).await {
+                    Ok(std::ops::ControlFlow::Continue(_)) => {},
+                    Ok(std::ops::ControlFlow::Break(_)) => break,
+                    Err(e) => {
+                        let err_msg = format!("Input error: {}", e);
+                        if let Err(ui_err) = app.ui().render(ChatEvent::Error(err_msg)).await {
+                            let msg = format!("Critical UI failure: {}", ui_err);
+                            exit_reason = Some(msg);
+                            break;
+                        }
+                    }
                 }
             }
 
             // gracfully handling CTRL+C shutdown signal
             _ = tokio::signal::ctrl_c() => {
-                ui.render(ChatEvent::SystemStatus(
-                    "Detected shutdown sequence. You can also use the '/quit' command to leave".to_string()
-                )).await?;
-                if let Some(client) = &client_option {
-                    client.broadcast_left().await?;
-                    // give some time to the bradcast to succeed
-                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                if let Err(e) = app.handle_ctrl_c().await {
+                    eprintln!("Error during graceful shutdown: {}", e);
                 }
-                let _ = shutdown_tx.send(());
+                break;
             }
         }
     }
 
-    if let Some(handle) = backend_handle {
-        let _ = handle.await;
+    shutdown_tx.send(()).ok();
+
+    if let Some(handle) = backend_handle
+        && let Err(e) = handle.await
+    {
+        eprintln!("Backend task panicked: {:?}", e);
     }
 
-    Ok(())
-}
-
-async fn handle_user_input<T: UserInterface>(
-    line: String,
-    client_option: &Option<ChatClient>,
-    ui: &mut T,
-) -> Result<bool> {
-    if let Some(client) = client_option {
-        let command = InputCommand::from(line);
-        match command {
-            InputCommand::Quit => {
-                client.broadcast_left().await?;
-                // give some time to the bradcast to succeed
-                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-                return Ok(false);
-            }
-            InputCommand::Broadcast(message) => client.broadcast_text(message).await?,
-            InputCommand::ChangeName(name) => {
-                ui.render(ChatEvent::SystemStatus(format!(
-                    "Changed name to {}",
-                    &name
-                )))
-                .await?;
-                client.broadcast_join(name).await?;
-            }
-            InputCommand::DiceRoll(dice_str) => match dice_str.parse::<Dice>() {
-                Ok(dice) => {
-                    let (result, rolls) = dice.roll();
-                    ui.render(ChatEvent::DiceRolled {
-                        result,
-                        rolls: rolls.clone(),
-                        dice,
-                        author: None,
-                    })
-                    .await?;
-                    client.broadcast_dice_roll(result, dice, rolls).await?;
-                }
-                Err(e) => ui.render(ChatEvent::Error(e.to_string())).await?,
-            },
-        }
-    } else {
-        ui.render(ChatEvent::Error("Wait for connection...".to_string()))
-            .await?;
+    if let Some(reason) = exit_reason {
+        eprintln!("Application exited with error: {}", reason);
+        return Err(anyhow::anyhow!(reason));
     }
-    Ok(true)
-}
 
-async fn handle_system_event<T: UserInterface>(
-    event: SystemEvent,
-    client_option: &Option<ChatClient>,
-    ui: &mut T,
-) -> Result<()> {
-    match event {
-        SystemEvent::Ui(ui_event) => ui.render(ui_event).await?,
-        SystemEvent::Network(network_event) => match network_event {
-            NetworkEvent::BroadcastJoin(name) => {
-                if let Some(client) = client_option {
-                    client.broadcast_join(name).await?;
-                } else {
-                    ui.render(ChatEvent::Error("Waiting for connection...".to_string()))
-                        .await?;
-                }
-            }
-        },
-    }
     Ok(())
 }

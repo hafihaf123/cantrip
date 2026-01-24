@@ -1,4 +1,4 @@
-use crate::ui::UserInterface;
+use crate::ui::{ChatRenderer, InputEvent, InputSource, UserInterface};
 use anyhow::Result;
 use std::io::{self, BufRead};
 
@@ -7,12 +7,22 @@ pub struct StdioUI {
 }
 
 impl StdioUI {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self { stdin: io::stdin() }
     }
 }
 
 impl UserInterface for StdioUI {
+    type Renderer = StdioUI;
+
+    type Input = StdioUI;
+
+    fn init() -> (Self::Renderer, Self::Input) {
+        (StdioUI::new(), StdioUI::new())
+    }
+}
+
+impl ChatRenderer for StdioUI {
     async fn render(&mut self, event: crate::events::ChatEvent) -> Result<()> {
         match event {
             crate::events::ChatEvent::MessageReceived { author, content } => {
@@ -42,17 +52,19 @@ impl UserInterface for StdioUI {
         }
         Ok(())
     }
+}
 
-    fn get_input(&mut self) -> Result<Option<String>> {
+impl InputSource for StdioUI {
+    fn get_input(&mut self) -> Result<InputEvent> {
         let mut line = String::new();
         let mut handle = self.stdin.lock();
         let bytes = handle.read_line(&mut line)?;
 
         if bytes == 0 {
             // EOF
-            Ok(None)
+            Ok(InputEvent::Quit)
         } else {
-            Ok(Some(line.trim().to_string()))
+            Ok(InputEvent::Text(line.trim().to_string()))
         }
     }
 }
