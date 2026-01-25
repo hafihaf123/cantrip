@@ -9,8 +9,7 @@ mod ticket;
 mod ui;
 
 use crate::chat::{ChatApp, ChatClient, ChatConfig, ChatRoom};
-use crate::ui::InputEvent;
-use crate::ui::{ChatRenderer, InputSource, UserInterface, stdio::StdioUI};
+use crate::ui::{ChatRenderer, InputEvent, InputSource, UserInterface, stdio::StdioUI};
 use crate::{cli::Cli, dice::Dice, events::ChatEvent};
 use anyhow::Result;
 use tokio::sync::{broadcast, mpsc};
@@ -55,8 +54,9 @@ async fn main() -> Result<()> {
             // connecting to the chat room in parallel while dataflows work
             result = &mut connect_task, if app.client().is_none() => {
                 match result {
-                    Ok((client, backend)) => {
+                    Ok((client, backend, clipboard)) => {
                         app.set_client(client);
+                        app.set_clipboard(clipboard);
                         let shutdown_rx = app.subscribe_shutdown();
                         backend_handle = Some(tokio::spawn(backend.subscribe_loop(shutdown_rx)));
                     }

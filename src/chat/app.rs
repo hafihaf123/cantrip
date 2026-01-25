@@ -2,6 +2,7 @@ use crate::events::{ChatEvent, NetworkEvent, SystemEvent};
 use crate::{ChatClient, Dice};
 use crate::{command::InputCommand, ui::ChatRenderer};
 use anyhow::Result;
+use arboard::Clipboard;
 use std::ops::ControlFlow;
 use tokio::sync::broadcast;
 
@@ -9,6 +10,7 @@ pub struct ChatApp<UI: ChatRenderer> {
     renderer: UI,
     client: Option<ChatClient>,
     shutdown_tx: broadcast::Sender<()>,
+    _clipboard: Option<Clipboard>,
 }
 
 impl<UI: ChatRenderer> ChatApp<UI> {
@@ -17,6 +19,7 @@ impl<UI: ChatRenderer> ChatApp<UI> {
             renderer,
             client: None,
             shutdown_tx,
+            _clipboard: None,
         }
     }
 
@@ -34,6 +37,10 @@ impl<UI: ChatRenderer> ChatApp<UI> {
 
     pub fn subscribe_shutdown(&self) -> broadcast::Receiver<()> {
         self.shutdown_tx.subscribe()
+    }
+
+    pub fn set_clipboard(&mut self, clipboard: Option<Clipboard>) {
+        self._clipboard = clipboard;
     }
 
     pub async fn handle_user_input(&mut self, line: String) -> Result<ControlFlow<()>> {

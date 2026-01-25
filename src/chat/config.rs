@@ -13,6 +13,7 @@ pub struct ChatConfig {
     pub topic: TopicId,
     pub bootstrap_nodes: Vec<EndpointAddr>,
     pub symmetric_key: [u8; 32],
+    pub is_host: bool,
 }
 
 impl ChatConfig {
@@ -23,14 +24,14 @@ impl ChatConfig {
 
         let topic_hash = blake3::hash(cli.room.as_bytes());
 
-        let (topic, bootstrap_nodes) = match &cli.ticket {
+        let (topic, bootstrap_nodes, is_host) = match &cli.ticket {
             None => {
                 let topic = TopicId::from_bytes(rand::random());
-                (topic, vec![])
+                (topic, vec![], true)
             }
             Some(ticket) => {
                 let (topic, endpoints) = Ticket::from_str(ticket)?.into_tuple();
-                (topic, endpoints)
+                (topic, endpoints, false)
             }
         };
 
@@ -42,6 +43,7 @@ impl ChatConfig {
             topic,
             bootstrap_nodes,
             symmetric_key,
+            is_host,
         })
     }
 }

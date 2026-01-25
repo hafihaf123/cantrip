@@ -4,9 +4,8 @@ use anyhow::Result;
 use futures_lite::StreamExt;
 use iroh::{Endpoint, EndpointId, protocol::Router};
 use iroh_gossip::api::{Event, GossipReceiver};
-use std::collections::HashMap;
-use tokio::sync::broadcast;
-use tokio::sync::mpsc::Sender;
+use std::collections::{HashMap, HashSet};
+use tokio::sync::{broadcast, mpsc::Sender};
 
 #[derive(Default)]
 struct ChatState {
@@ -38,6 +37,7 @@ pub struct ChatBackend {
     receiver: GossipReceiver,
     event_tx: Sender<SystemEvent>,
     username: String,
+    bad_actors: HashSet<EndpointId>,
 }
 
 impl ChatBackend {
@@ -57,6 +57,7 @@ impl ChatBackend {
             receiver,
             event_tx,
             username,
+            bad_actors: HashSet::new(),
         }
     }
 
@@ -110,8 +111,30 @@ impl ChatBackend {
 
     async fn handle_event(&mut self, event: Event) -> Result<()> {
         if let Event::Received(msg) = event {
-            let decrypted = Message::from_bytes(&msg.content)?.decrypt(&self.key)?;
-            self.handle_message(decrypted).await?;
+            match Message::from_bytes(&msg.content)?.decrypt(&self.key) {
+                Ok(decrypted) => {
+                    if self.bad_actors.remove(&msg.delivered_from) {
+                        self.event_tx
+                            .send(SystemEvent::Ui(ChatEvent::SystemStatus(format!(
+                                "Encryption recovered for peer {}",
+                                msg.delivered_from.fmt_short()
+                            ))))
+                            .await?;
+                    }
+                    self.handle_message(decrypted).await?;
+                }
+                Err(e) => {
+                    if self.bad_actors.insert(msg.delivered_from) {
+                        self.event_tx
+                            .send(SystemEvent::Ui(ChatEvent::Error(format!(
+                                "Decryption failed for peer {}: {}. Usually caused by password or room name mismatch.",
+                                msg.delivered_from.fmt_short(),
+                                e
+                            ))))
+                            .await?;
+                    }
+                }
+            };
         }
         Ok(())
     }
