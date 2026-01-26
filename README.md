@@ -1,17 +1,21 @@
-# Cantrip: The Decentralized Table
+# Cantrip
+
+[![Crates.io Version](https://img.shields.io/crates/v/cantrip-vtt?style=plastic)](https://crates.io/crates/cantrip-vtt)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/hafihaf123/cantrip/rust.yml?style=plastic)](https://github.com/hafihaf123/cantrip/actions)
+![Crates.io License](https://img.shields.io/crates/l/cantrip-vtt?style=plastic)
+[![Downloads](https://img.shields.io/crates/d/cantrip-vtt?style=plastic)](https://crates.io/crates/cantrip-vtt)
 
 <!--toc:start-->
 
-- [Cantrip: The Decentralized Table](#cantrip-the-decentralized-table)
+- [Cantrip](#cantrip)
   - [The Vision](#the-vision)
   - [Features](#features)
-    - [Core (Implemented)](#core-implemented)
-    - [Roadmap (In Progress)](#roadmap-in-progress)
   - [Installation](#installation)
   - [Usage](#usage)
     - [Common Arguments](#common-arguments)
-    - [1. Host a Game Session (DM)](#1-host-a-game-session-dm)
-    - [2. Join a Table (Player)](#2-join-a-table-player)
+    - [1. Host a Game](#1-host-a-game)
+    - [2. Join a Table](#2-join-a-table)
+    - [Key Commands](#key-commands)
   - [Development Roadmap](#development-roadmap)
     - [Phase 1: The Dice & Command Framework](#phase-1-the-dice-and-command-framework)
     - [Phase 2: The Interface](#phase-2-the-interface)
@@ -25,8 +29,9 @@ and other RPGs, built in Rust. It leverages **Iroh** for decentralized networkin
 to create a "serverless" game table where the Dungeon Master and players connect
 directly.
 
-Unlike traditional VTTs that rely on central servers or subscription fees, Cantrip
-is ephemeral, private, and runs entirely in your terminal.
+Ephemeral. Private. Hacker-Friendly.
+
+![Cantrip TUI Demo](https://raw.githubusercontent.com/hafihaf123/cantrip/main/assets/demo.gif)
 
 ## The Vision
 
@@ -35,28 +40,19 @@ It combines a secure chat client with a structured game state manager.
 
 - **No Servers:** Your game exists only while you are playing.
 - **Private:** All rolls, whispers, and maps are encrypted between peers.
-- **Hacker-Friendly:** A text-first interface that feels like a classic MUD but
+- **Terminal-Native:** A text-first interface that feels like a classic MUD but
   plays like 5th Edition.
 
 ## Features
-
-### Core (Implemented)
 
 - **Peer-to-Peer:** Connects directly via Iroh's gossip protocol.
 - **End-to-End Encryption:** Standard cryptographic primitives (XChaCha20Poly1305)
   ensure only your party sees the game.
 - **Ticket-based Invites:** Securely share "Table Access" via encoded tickets.
-
-### Roadmap (In Progress)
-
 - **The Game Board (TUI):** A split-pane terminal interface separating chat, initiative
   trackers, and player status (using `Ratatui`).
 - **Dice Engine:** Native support for `/roll 1d20+5` with verifiable results broadcast
   to the party.
-- **DM Authority:** The room creator acts as the host, managing the "Source of Truth"
-  for health and turns.
-- **Private Whispers:** Encrypted direct messaging between DM and players for secret
-  checks.
 
 ## Installation
 
@@ -66,6 +62,7 @@ the project is stable.
 ```bash
 cargo install cantrip-vtt
 ```
+_Requirements: A terminal with UTF-8 support and Rust installed._
 
 The binary will be available in the Cargo binary directory. For more information
 check the [official Cargo documentation](https://doc.rust-lang.org/cargo/commands/cargo-install.html).
@@ -73,16 +70,17 @@ check the [official Cargo documentation](https://doc.rust-lang.org/cargo/command
 ## Usage
 
 Cantrip works by either **Hosting** a new table or **Joining** an existing one using
-a ticket.
+a ticket. You can omit any commandline arguments to get and interactive prompt, except
+the `open` or `join` subcommands.
 
 ### Common Arguments
-
-You will be prompted for a password interactively for extra security.
 
 - `-u, --username`: Your character name (minimum 4 characters).
 - `-r, --room`: The room name (minimum 4 characters).
 
-### 1. Host a Game Session (DM)
+You will also be prompted for a password interactively for extra security.
+
+### 1. Host a Game
 
 To start a new session and generate an invite ticket for your players:
 
@@ -93,13 +91,21 @@ cantrip -u DungeonMaster -r "CurseOfStrahd" open
 _This will display a ticket string (e.g., `ticket-abc123...`) that you send to your
 players._
 
-### 2. Join a Table (Player)
+### 2. Join a Table
 
 To join an existing session using a ticket provided by the DM:
 
 ```bash
 cantrip -u Grog -r "CurseOfStrahd" join --ticket "ticket_string_here"
 ```
+
+### Key Commands
+
+Once inside the TUI, you can use the following commands:
+
+* `/roll 1d20+2` - Roll for initiative or checks.
+* `/nick new_name` - Change your displayed name.
+* `/quit` - Leave the table.
 
 ## Development Roadmap
 
@@ -111,7 +117,7 @@ cantrip -u Grog -r "CurseOfStrahd" join --ticket "ticket_string_here"
 
 ### Phase 2: The Interface
 
-- [ ] Migrate from scrolling text (`println!`) to a full TUI with `Ratatui`.
+- [x] Migrate from scrolling text (`println!`) to a full TUI with `Ratatui`.
 - [ ] Create a "Table State" pane to view connected peers and HP.
 
 ### Phase 3: Identity and Roles
