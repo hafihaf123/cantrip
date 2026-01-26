@@ -1,4 +1,6 @@
-pub(crate) mod stdio;
+// pub(crate) mod stdio;
+pub(crate) mod tui;
+
 use crate::events::ChatEvent;
 use anyhow::Result;
 
@@ -14,10 +16,11 @@ pub trait UserInterface {
     type Renderer: ChatRenderer;
     type Input: InputSource;
 
-    fn init() -> (Self::Renderer, Self::Input);
+    fn init() -> Result<(Self::Renderer, Self::Input)>;
 }
 
 pub enum InputEvent {
     Text(String),
-    Quit,
+    // Quit,
+    Redraw,
 }

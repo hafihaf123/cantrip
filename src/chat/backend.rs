@@ -90,22 +90,21 @@ impl ChatBackend {
             }
         }
 
-        self.event_tx
+        _ = self
+            .event_tx
             .send(SystemEvent::Ui(ChatEvent::SystemStatus(
                 "You left the chat".to_string(),
             )))
-            .await
-            .ok();
+            .await;
 
         if let Err(e) = self.router.shutdown().await {
-            self.event_tx
+            _ = self
+                .event_tx
                 .send(SystemEvent::Ui(ChatEvent::Error(format!(
                     "Error during shutdown: {:?}",
                     e
                 ))))
                 .await
-                .expect("Failed to log shotdown error");
-            // .ok();
         }
     }
 

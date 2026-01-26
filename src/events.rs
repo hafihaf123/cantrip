@@ -28,4 +28,5 @@ pub enum ChatEvent {
         author: Option<String>,
     },
     Error(String),
+    Redraw,
 }
