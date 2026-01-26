@@ -3,79 +3,123 @@ Require tmux
 
 Output vhs.gif
 
-Set Width 1600
-Set Height 800
-Set FontSize 16
-Set Padding 20
+Set WindowBar Colorful
+Set Theme "GruvboxDark"
+# Set FontFamily "JetBrains Mono"
+Set FontSize 22
+# Set LineHeight 1.2
 
-# 1. Setup Tmux (Hide this part so the viewer just sees the app start)
+Set Width 1600
+Set Height 750
+Set Padding 50
+Set Margin 20
+Set BorderRadius 10
+
+Set TypingSpeed 50ms
+Set PlaybackSpeed 1.0
+
 Hide
+
+Type "bash --noprofile --norc"
+Enter
+Type 'export PS1="\[\033[32;1m\]>\[\033[0m\] "'
+Enter
+Type "clear"
+Enter
+
 Type "tmux new-session -d -s cantrip_demo"
 Enter
+
+Type "tmux set-option -g default-command 'bash --noprofile --norc'"
+Enter
+
+Type "tmux set status off"
+Enter
+Type "tmux set pane-border-style fg='#444444'"
+Enter
+Type "tmux set pane-active-border-style fg='#444444'"
+Enter
+
 Type "tmux split-window -h -t cantrip_demo"
 Enter
-# Resize panes if necessary (optional)
-# Type "tmux resize-pane -L 10"
-# Enter
+
 Type "tmux attach -t cantrip_demo"
 Enter
+
+Type 'export PS1="\[\033[1;32m\]>\[\033[0m\] "'
+Enter
+Type "clear"
+Enter
+
+Ctrl+B
+Type "o"
+
+Type 'export PS1="\[\033[1;32m\]>\[\033[0m\] "'
+Enter
+Type "clear"
+Enter
+
+Ctrl+B
+Type "o"
+
 Show
+
+Sleep 1s
 
 Type "cantrip -u DungeonMaster -r Strahd open"
 Enter
 Wait /password/
+Sleep 500ms
 Type "password"
 Enter
 Sleep 2s
 
 Ctrl+B
 Type "o"
-Sleep 1s
+Sleep 500ms
 
-Type "cantrip -u Player -r Strahd join"
-Enter
-Wait /ticket/
+Type "cantrip -u Grog -r Strahd join "
 Paste
+Sleep 1s
 Enter
 Wait /password/
+Sleep 500ms
 Type "password"
 Enter
 Sleep 2s
 
 Ctrl+B
 Type "o"
-
-Type "You find yourselves at the gates of Barovia. The mist is thick."
+Type "You find yourselves at the gates of Barovia."
 Enter
-Sleep 2s
+Sleep 1.5s
 
 Ctrl+B
 Type "o"
 Type "I look around for threats."
 Enter
 Sleep 1s
+
 Type "/roll 1d20+3"
 Enter
 Sleep 2s
 
 Ctrl+B
 Type "o"
-Type "You see a dark shape looming near the gate..."
+Type "A dark shape looms near the gate..."
 Enter
 Sleep 3s
 
-Ctrl+B
-Type "o"
 Type "/quit"
 Enter
-Sleep 3s
-
-
+Sleep 500ms
 Ctrl+B
 Type "o"
+Sleep 1s
 Type "/quit"
 Enter
-Sleep 3s
+
+Sleep 2s
 
 Hide
 Type "tmux kill-session -t cantrip_demo"

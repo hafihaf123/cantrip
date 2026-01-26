@@ -83,8 +83,8 @@ impl TryFrom<Args> for Cli {
             Some(
                 ticket
                     .map(|topic| {
-                        if let Some(topic) = topic.strip_prefix(TICKET_PREFIX) {
-                            Ok(topic.to_string())
+                        if topic.starts_with(TICKET_PREFIX) {
+                            Ok(topic)
                         } else {
                             Err(anyhow!("Invalid ticket"))
                         }
