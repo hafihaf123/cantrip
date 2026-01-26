@@ -1,13 +1,13 @@
 use crate::events::ChatEvent;
-use crate::ui::tui::TuiBackendGuard;
-use crate::ui::{ChatRenderer, tui::model::TuiModel};
+use crate::ui::ChatRenderer;
+use crate::ui::tui::{TuiBackendGuard, model::TuiModel};
 use anyhow::Result;
 use ratatui::layout::{Constraint, Layout};
 use ratatui::style::{Modifier, Style};
 use ratatui::widgets::{Block, Borders, List, Paragraph};
 use ratatui::{Terminal, prelude::CrosstermBackend};
-use std::io;
-use std::{io::Stdout, sync::Arc};
+use std::io::{self, Stdout};
+use std::sync::Arc;
 use tokio::sync::RwLock;
 
 pub struct TuiRenderer {

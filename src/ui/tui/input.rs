@@ -16,15 +16,23 @@ impl TuiInput {
 
 impl InputSource for TuiInput {
     fn get_input(&mut self) -> anyhow::Result<crate::ui::InputEvent> {
+        let event = event::read()?;
+
         let mut model = self.model.blocking_write();
 
-        match event::read()? {
+        match event {
             Event::Key(key) => match key.code {
                 KeyCode::Enter => {
                     let text = model.input.value_and_reset();
                     if !text.trim().is_empty() {
                         return Ok(InputEvent::Text(text));
                     }
+                }
+                KeyCode::PageUp | KeyCode::Up => {
+                    model.scroll_up();
+                }
+                KeyCode::PageDown | KeyCode::Down => {
+                    model.scroll_down();
                 }
                 _ => {
                     model.input.handle_event(&Event::Key(key));

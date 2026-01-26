@@ -68,7 +68,12 @@ impl<UI: ChatRenderer> ChatApp<UI> {
                     _ = self.shutdown_tx.send(());
                     return Ok(ControlFlow::Break(()));
                 }
-                InputCommand::Broadcast(message) => client.broadcast_text(message).await?,
+                InputCommand::Broadcast(message) => {
+                    self.renderer
+                        .render(ChatEvent::MessageSent(message.clone()))
+                        .await?;
+                    client.broadcast_text(message).await?
+                }
                 InputCommand::ChangeName(name) => {
                     self.renderer
                         .render(ChatEvent::SystemStatus(format!(
