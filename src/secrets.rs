@@ -1,25 +1,23 @@
-use anyhow::anyhow;
 use anyhow::{Context, Result};
 use argon2::Argon2;
 use iroh::SecretKey;
 use keyring::Entry;
 
 pub fn get_secret_key(username: &str) -> Result<SecretKey> {
-    let entry = Entry::new("cantrip-rs", username)
-        .context("Unexpected error constructing a keychain entry")?;
+    let entry = match Entry::new("cantrip-rs", username) {
+        Ok(entry) => entry,
+        Err(_) => return Ok(SecretKey::generate(&mut rand::rng())),
+    };
     let secret = entry.get_secret();
     match secret {
         Ok(bytes) => (&bytes[..])
             .try_into()
             .context("Failed to construct a secret key from a value stored in the keychain."),
-        Err(keyring::Error::NoEntry) => {
+        Err(_) => {
             let secret = SecretKey::generate(&mut rand::rng());
-            entry
-                .set_secret(&secret.to_bytes())
-                .context("Failed to add the generated secret key to a keychain")?;
+            _ = entry.set_secret(&secret.to_bytes());
             Ok(secret)
         }
-        Err(e) => Err(anyhow!(e)),
     }
 }
 
