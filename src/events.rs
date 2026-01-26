@@ -14,6 +14,7 @@ pub enum ChatEvent {
         author: String,
         content: String,
     },
+    MessageSent(String),
     PeerJoined(String),
     PeerLeft(String),
     PeerNameChange {
