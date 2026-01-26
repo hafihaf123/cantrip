@@ -17,8 +17,8 @@ impl UserInterface for StdioUI {
 
     type Input = StdioUI;
 
-    fn init() -> (Self::Renderer, Self::Input) {
-        (StdioUI::new(), StdioUI::new())
+    fn init() -> Result<(Self::Renderer, Self::Input)> {
+        Ok((StdioUI::new(), StdioUI::new()))
     }
 }
 
@@ -49,6 +49,7 @@ impl ChatRenderer for StdioUI {
                 dice,
                 rolls
             ),
+            crate::events::ChatEvent::Redraw => {}
         }
         Ok(())
     }

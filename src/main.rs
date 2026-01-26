@@ -9,7 +9,8 @@ mod ticket;
 mod ui;
 
 use crate::chat::{ChatApp, ChatClient, ChatConfig, ChatRoom};
-use crate::ui::{ChatRenderer, InputEvent, InputSource, UserInterface, stdio::StdioUI};
+use crate::ui::tui::TerminalInterface;
+use crate::ui::{ChatRenderer, InputSource, UserInterface};
 use crate::{cli::Cli, dice::Dice, events::ChatEvent};
 use anyhow::Result;
 use tokio::sync::{broadcast, mpsc};
@@ -20,18 +21,17 @@ async fn main() -> Result<()> {
     let cli = Cli::parse()?;
     let chat_config = ChatConfig::from_cli(cli)?;
 
-    let (renderer, mut input_source) = StdioUI::init();
+    let (renderer, mut input_source) = TerminalInterface::init()?;
     // UI user input sending logic
     let (input_tx, mut input_rx) = mpsc::channel(100);
     std::thread::spawn(move || {
         loop {
             match input_source.get_input() {
-                Ok(InputEvent::Text(text)) => {
-                    if input_tx.blocking_send(text).is_err() {
+                Ok(input_event) => {
+                    if input_tx.blocking_send(input_event).is_err() {
                         break;
                     }
                 }
-                Ok(InputEvent::Quit) => break,
                 Err(e) => {
                     eprintln!("Error fetching input: {}", e);
                     break;
@@ -82,8 +82,8 @@ async fn main() -> Result<()> {
             }
 
             // receiving user input, processing and propagating as system events
-            Some(line) = input_rx.recv() => {
-                match app.handle_user_input(line).await {
+            Some(input_event) = input_rx.recv() => {
+                match app.handle_user_input(input_event).await {
                     Ok(std::ops::ControlFlow::Continue(_)) => {},
                     Ok(std::ops::ControlFlow::Break(_)) => break,
                     Err(e) => {
@@ -107,7 +107,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    shutdown_tx.send(()).ok();
+    _ = shutdown_tx.send(());
 
     if let Some(handle) = backend_handle
         && let Err(e) = handle.await

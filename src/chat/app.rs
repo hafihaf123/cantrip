@@ -1,4 +1,5 @@
 use crate::events::{ChatEvent, NetworkEvent, SystemEvent};
+use crate::ui::InputEvent;
 use crate::{ChatClient, Dice};
 use crate::{command::InputCommand, ui::ChatRenderer};
 use anyhow::Result;
@@ -43,15 +44,28 @@ impl<UI: ChatRenderer> ChatApp<UI> {
         self._clipboard = clipboard;
     }
 
-    pub async fn handle_user_input(&mut self, line: String) -> Result<ControlFlow<()>> {
+    pub async fn handle_user_input(&mut self, input_event: InputEvent) -> Result<ControlFlow<()>> {
+        match input_event {
+            InputEvent::Text(text) => {
+                let command = InputCommand::from(text);
+                self.handle_command(command).await
+            }
+            // InputEvent::Quit => Ok(ControlFlow::Break(())),
+            InputEvent::Redraw => {
+                self.ui().render(ChatEvent::Redraw).await?;
+                Ok(ControlFlow::Continue(()))
+            }
+        }
+    }
+
+    async fn handle_command(&mut self, command: InputCommand) -> Result<ControlFlow<()>> {
         if let Some(client) = &self.client {
-            let command = InputCommand::from(line);
             match command {
                 InputCommand::Quit => {
                     client.broadcast_left().await?;
                     // give some time to the bradcast to succeed
                     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-                    self.shutdown_tx.send(()).ok();
+                    _ = self.shutdown_tx.send(());
                     return Ok(ControlFlow::Break(()));
                 }
                 InputCommand::Broadcast(message) => client.broadcast_text(message).await?,
@@ -122,7 +136,7 @@ impl<UI: ChatRenderer> ChatApp<UI> {
                     .to_string(),
             ))
             .await?;
-        self.shutdown_tx.send(()).ok();
+        _ = self.shutdown_tx.send(());
         Ok(())
     }
 }
