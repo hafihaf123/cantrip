@@ -31,7 +31,7 @@ directly.
 
 Ephemeral. Private. Hacker-Friendly.
 
-![Cantrip TUI Demo](https://raw.githubusercontent.com/hafihaf123/cantrip/main/assets/demo.gif)
+![Cantrip TUI Demo](https://github.com/hafihaf123/cantrip/blob/main/vhs.gif)
 
 ## The Vision
 
@@ -62,6 +62,7 @@ the project is stable.
 ```bash
 cargo install cantrip-vtt
 ```
+
 _Requirements: A terminal with UTF-8 support and Rust installed._
 
 The binary will be available in the Cargo binary directory. For more information
@@ -70,8 +71,8 @@ check the [official Cargo documentation](https://doc.rust-lang.org/cargo/command
 ## Usage
 
 Cantrip works by either **Hosting** a new table or **Joining** an existing one using
-a ticket. You can omit any commandline arguments to get and interactive prompt, except
-the `open` or `join` subcommands.
+a ticket. You can omit any commandline arguments to get and interactive prompt,
+except the `open` or `join` subcommands.
 
 ### Common Arguments
 
@@ -96,16 +97,16 @@ players._
 To join an existing session using a ticket provided by the DM:
 
 ```bash
-cantrip -u Grog -r "CurseOfStrahd" join --ticket "ticket_string_here"
+cantrip -u Grog -r "CurseOfStrahd" join "ticket_string_here"
 ```
 
 ### Key Commands
 
 Once inside the TUI, you can use the following commands:
 
-* `/roll 1d20+2` - Roll for initiative or checks.
-* `/nick new_name` - Change your displayed name.
-* `/quit` - Leave the table.
+- `/roll 1d20+2` - Roll for initiative or checks.
+- `/nick new_name` - Change your displayed name.
+- `/quit` - Leave the table.
 
 ## Development Roadmap
 

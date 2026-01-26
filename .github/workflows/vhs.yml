@@ -1,0 +1,60 @@
+name: Generate VHS Demo
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - '**/*.tape'        # Only run if the tape file changes...
+      - 'src/**'           # ...or if the source code changes
+  workflow_dispatch:       # Allows you to click "Run" manually in GitHub Actions
+
+permissions:
+  contents: write
+
+jobs:
+  vhs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # Install dependencies (Tmux is required for your split screen!)
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg ttyd tmux libdbus-1-dev pkg-config xclip xvfb
+
+      - name: Cache Rust
+        uses: swatinem/rust-cache@v2
+
+      # Build your Rust Application
+      # We build in release mode so it's fast in the demo
+      - name: Build Cantrip
+        run: cargo build --release
+
+      - name: Cache VHS Binary
+        id: cache-vhs
+        uses: actions/cache@v3
+        with:
+          path: ~/go/bin/vhs
+          # Change this string (e.g. v2) if you ever need to force a re-install
+          key: vhs-binary-v1 
+
+      # Install VHS (Only if Cache Miss)
+      - name: Install VHS
+        if: steps.cache-vhs.outputs.cache-hit != 'true'
+        run: go install github.com/charmbracelet/vhs@latest
+
+      - name: Add Go Bin to Path
+        run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      # 4. Run VHS
+      # We add the release folder to PATH so VHS can find the 'cantrip' command
+      - name: Generate GIF
+        run: |
+          export PATH=$PATH:$(pwd)/target/release
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" vhs vhs.tape
+
+      # 5. Commit the change
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: update demo gif [skip ci]"
+          file_pattern: '*.gif'
