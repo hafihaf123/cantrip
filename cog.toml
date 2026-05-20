@@ -1,0 +1,59 @@
+tag_prefix = "v"
+
+from_latest_tag = true
+ignore_merge_commits = true
+ignore_fixup_commits = true
+disable_changelog = false
+disable_bump_commit = false
+generate_mono_repository_global_tag = true
+generate_mono_repository_package_tags = true
+branch_whitelist = []
+skip_ci = "[skip ci]"
+skip_untracked = false
+
+pre_bump_hooks = [
+    "sed -i 's/^version = .*/version = \"{{version}}\"/' Cargo.toml",
+    "cargo build --release",
+    "cargo test --release",
+    "git add Cargo.toml Cargo.lock",
+]
+post_bump_hooks = [
+    "git push",
+    "git push origin v{{version}}",
+    "cog changelog --at v{{version}} > .tmp_release_notes.md",
+    "gh release create v{{version}} --title v{{version}} --notes-file .tmp_release_notes.md",
+    "rm .tmp_release_notes.md",
+]
+pre_package_bump_hooks = []
+post_package_bump_hooks = []
+
+[git_hooks.commit-msg]
+script = """#!/bin/sh
+set -e
+cog verify --file $1
+"""
+
+[git_hooks.pre-commit]
+script = """#!/bin/sh
+set -e
+cargo fmt -v --all --check
+cargo clippy -- -D warnings
+"""
+
+[git_hooks.pre-push]
+script = """#!/bin/sh
+set -e
+cargo test
+"""
+
+[commit_types]
+
+[changelog]
+path = "CHANGELOG.md"
+template = "remote"
+remote = "github.com"
+repository = "cantrip"
+owner = "hafihaf123"
+authors = [{ username = "hafihaf123", signature = "Michal Buchman" }]
+
+[bump_profiles]
