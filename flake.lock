@@ -24,8 +24,8 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1779182304,
-        "narHash": "sha256-qE6hv7uLiAV+Ygcn2hYxFFNpJWOVas/hUNWVMe+/d6E=",
+        "lastModified": 1779397965,
+        "narHash": "sha256-nX17rGZXmVgAZZb/o9+G/pTYgvqJP43dHo6ax2dpvvA=",
         "path": "/home/passwd/nix_devenvs",
         "type": "path"
       },
