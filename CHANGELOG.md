@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.2.1](https://github.com/hafihaf123/cantrip/compare/2c82d5588be1533e507c7023af1ec34d441bfb7d..v0.2.1) - 2026-05-27
+#### Bug Fixes
+- restructure the whole tui architecture for better scalability and improve the tui to correctly wrap long messages - ([5e7b14a](https://github.com/hafihaf123/cantrip/commit/5e7b14a25991f36be5fbbc2b530947232c32bfa7)) - [@hafihaf123](https://github.com/hafihaf123)
+#### Build system
+- update nix flake - ([2c82d55](https://github.com/hafihaf123/cantrip/commit/2c82d5588be1533e507c7023af1ec34d441bfb7d)) - [@hafihaf123](https://github.com/hafihaf123)
+
+- - -
+
 ## [v0.2.0](https://github.com/hafihaf123/cantrip/compare/0d85010d202fd8d65001aa3dea12063be52630dd..v0.2.0) - 2026-05-20
 #### Features
 - initial tui version (unstable) - ([a03c226](https://github.com/hafihaf123/cantrip/commit/a03c2260c1fc4d6588e1cf0d08ba497df16f3a9a)) - [@hafihaf123](https://github.com/hafihaf123)
