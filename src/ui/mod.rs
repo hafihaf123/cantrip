@@ -1,11 +1,16 @@
-// pub(crate) mod stdio;
+pub(crate) mod stdio;
 pub(crate) mod tui;
 
-use crate::events::ChatEvent;
+use crate::chat::AppState;
 use anyhow::Result;
+use ratatui::crossterm::event::Event as CrosstermEvent;
 
 pub trait ChatRenderer: Send + Sync + 'static {
-    async fn render(&mut self, event: ChatEvent) -> Result<()>;
+    async fn draw(&mut self, state: &AppState) -> Result<()>;
+
+    fn handle_ui_event(&mut self, _: &InputEvent) -> bool {
+        false
+    }
 }
 
 pub trait InputSource: Send + Sync + 'static {
@@ -20,7 +25,10 @@ pub trait UserInterface {
 }
 
 pub enum InputEvent {
-    Text(String),
-    // Quit,
+    Submit,
+    ScrollUp,
+    ScrollDown,
+    Terminal(CrosstermEvent),
+    Close,
     Redraw,
 }

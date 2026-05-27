@@ -1,47 +1,28 @@
-use crate::ui::{InputEvent, InputSource, tui::model::TuiModel};
+use crate::ui::{InputEvent, InputSource};
 use ratatui::crossterm::event::{self, Event, KeyCode};
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use tui_input::backend::crossterm::EventHandler;
 
-pub struct TuiInput {
-    model: Arc<RwLock<TuiModel>>,
-}
+pub struct TuiInput {}
 
 impl TuiInput {
-    pub(super) fn new(model: Arc<RwLock<TuiModel>>) -> Self {
-        Self { model }
+    pub(super) fn new() -> Self {
+        Self {}
     }
 }
 
 impl InputSource for TuiInput {
-    fn get_input(&mut self) -> anyhow::Result<crate::ui::InputEvent> {
+    fn get_input(&mut self) -> anyhow::Result<InputEvent> {
         let event = event::read()?;
-
-        let mut model = self.model.blocking_write();
 
         match event {
             Event::Key(key) => match key.code {
-                KeyCode::Enter => {
-                    let text = model.input.value_and_reset();
-                    if !text.trim().is_empty() {
-                        return Ok(InputEvent::Text(text));
-                    }
-                }
-                KeyCode::PageUp | KeyCode::Up => {
-                    model.scroll_up();
-                }
-                KeyCode::PageDown | KeyCode::Down => {
-                    model.scroll_down();
-                }
-                _ => {
-                    model.input.handle_event(&Event::Key(key));
-                }
+                KeyCode::Enter => Ok(InputEvent::Submit),
+                KeyCode::PageUp | KeyCode::Up => Ok(InputEvent::ScrollUp),
+                KeyCode::PageDown | KeyCode::Down => Ok(InputEvent::ScrollDown),
+                KeyCode::Esc => Ok(InputEvent::Close),
+                _ => Ok(InputEvent::Terminal(Event::Key(key))),
             },
-            event => {
-                model.input.handle_event(&event);
-            }
+            Event::Resize(..) => Ok(InputEvent::Redraw),
+            event => Ok(InputEvent::Terminal(event)),
         }
-        Ok(InputEvent::Redraw)
     }
 }

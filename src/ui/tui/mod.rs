@@ -1,18 +1,17 @@
+mod chatbox;
+mod error_popup;
 mod input;
-mod model;
+mod inputbox;
 mod renderer;
 
-use crate::ui::{
-    UserInterface,
-    tui::{input::TuiInput, model::TuiModel, renderer::TuiRenderer},
-};
+use crate::ui::UserInterface;
+use crate::ui::tui::{input::TuiInput, renderer::TuiRenderer};
 use anyhow::Result;
-use ratatui::crossterm::{
-    execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+use ratatui::crossterm::execute;
+use ratatui::crossterm::terminal::{
+    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
-use std::{io, sync::Arc};
-use tokio::sync::RwLock;
+use std::io;
 
 struct TuiBackendGuard;
 
@@ -43,10 +42,9 @@ impl UserInterface for TerminalInterface {
 
     fn init() -> Result<(Self::Renderer, Self::Input)> {
         let backend_guard = TuiBackendGuard::new()?;
-        let model = Arc::new(RwLock::new(TuiModel::default()));
 
-        let input_source = TuiInput::new(Arc::clone(&model));
-        let renderer = TuiRenderer::new(model, backend_guard)?;
+        let input_source = TuiInput::new();
+        let renderer = TuiRenderer::new(backend_guard)?;
 
         Ok((renderer, input_source))
     }

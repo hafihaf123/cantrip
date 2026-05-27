@@ -9,9 +9,8 @@ mod ticket;
 mod ui;
 
 use crate::chat::{ChatApp, ChatClient, ChatConfig, ChatRoom};
-use crate::ui::tui::TerminalInterface;
-use crate::ui::{ChatRenderer, InputSource, UserInterface};
-use crate::{cli::Cli, dice::Dice, events::ChatEvent};
+use crate::cli::Cli;
+use crate::ui::{InputSource, UserInterface, tui::TerminalInterface};
 use anyhow::Result;
 use tokio::sync::{broadcast, mpsc};
 use tokio::task::JoinHandle;
@@ -62,7 +61,7 @@ async fn main() -> Result<()> {
                     }
                     Err(e) => {
                         let err_msg = format!("Fatal connection error: {}", e);
-                        if let Err(e) = app.ui().render(ChatEvent::Error(err_msg.clone())).await {
+                        if let Err(e) = app.render_error(err_msg.clone()).await {
                             eprintln!("Failed to render error to UI: {}. Original error: {}.", e, err_msg)
                         };
                         exit_reason = Some(err_msg);
@@ -88,7 +87,7 @@ async fn main() -> Result<()> {
                     Ok(std::ops::ControlFlow::Break(_)) => break,
                     Err(e) => {
                         let err_msg = format!("Input error: {}", e);
-                        if let Err(ui_err) = app.ui().render(ChatEvent::Error(err_msg)).await {
+                        if let Err(ui_err) = app.render_error(err_msg).await {
                             let msg = format!("Critical UI failure: {}", ui_err);
                             exit_reason = Some(msg);
                             break;
