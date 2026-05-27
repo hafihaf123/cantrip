@@ -1,6 +1,8 @@
 {
   description = "CANTRIP Rust environment extension";
-  inputs.master.url = "path:/home/passwd/nix_devenvs";
+
+  inputs.master.url = "github:hafihaf123/nix_devenvs";
+
   outputs =
     { master, ... }:
     {
@@ -17,9 +19,7 @@
             buildInputs = [
               pkgs.dbus.dev
             ];
-
           };
-
         }
       ) master.devShells;
     };

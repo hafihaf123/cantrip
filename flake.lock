@@ -24,14 +24,17 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1779613109,
-        "narHash": "sha256-AYkPBTpXPpl6CJZszRZ2iXLHEdoTApYaAu6IpW3s+MU=",
-        "path": "/home/passwd/nix_devenvs",
-        "type": "path"
+        "lastModified": 1779894472,
+        "narHash": "sha256-amTWSbfVJfOHfEgoSInKrG0V/BPIXcss4jIts8vUgNQ=",
+        "owner": "hafihaf123",
+        "repo": "nix_devenvs",
+        "rev": "094571f19a26d71d9ecd46296437073d2c9be001",
+        "type": "github"
       },
       "original": {
-        "path": "/home/passwd/nix_devenvs",
-        "type": "path"
+        "owner": "hafihaf123",
+        "repo": "nix_devenvs",
+        "type": "github"
       }
     },
     "nixpkgs": {
